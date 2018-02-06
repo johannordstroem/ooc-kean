@@ -18,13 +18,31 @@ DebugLevel: enum {
 	Silent
 }
 
+version(useFileWriter) {
+	DebugFileWriter: cover {
+		fileWriter := static FileWriter new("data/media/0/DCIM/Camera/debugLog.txt")
+		free: static func ~all {
+			This fileWriter free()
+		}
+		write: static func (string: String) {
+			This fileWriter write(string + "\n")
+		}
+	}
+}
+
 Debug: class {
 	_level: static DebugLevel = DebugLevel Debug
 	level: static DebugLevel {
 		get { This _level }
 		set (value) { This _level = value }
 	}
-	_printFunction: static Func (String) = func (s: String) { println(s) }
+	_printFunction: static Func (String) = func (s: String) {
+		version(useFileWriter) {
+			DebugFileWriter write(s + "\n")
+		} else {
+			println(s)
+		}
+	}
 	initialize: static func (f: Func (String)) {
 		(This _printFunction as Closure) free()
 		This _printFunction = f
@@ -49,6 +67,7 @@ Debug: class {
 			This error(message, origin)
 	}
 	free: static func ~all {
+		version(useFileWriter) DebugFileWriter free~all()
 		(This _printFunction as Closure) free()
 	}
 }
